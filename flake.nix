@@ -33,7 +33,7 @@
           # Copy with .elf extension so picotool recognizes it
           cp "$BINARY" "$ELF_BINARY"
           
-          echo "Flashing $ELF_BINARY with picotool..."
+          echo  "Flashing $ELF_BINARY with picotool..."
           if sudo ${pkgs.picotool}/bin/picotool info >/dev/null 2>&1; then
             sudo ${pkgs.picotool}/bin/picotool load "$ELF_BINARY"
             sudo ${pkgs.picotool}/bin/picotool reboot
@@ -60,8 +60,8 @@
             cargo-binutils
             
             # Embedded development tools
+            probe-rs-tools
             picotool
-            flip-link
             
             # Build dependencies
             pkg-config
@@ -77,9 +77,6 @@
             echo "Rust version: $(rustc --version)"
             echo "Available targets: thumbv6m-none-eabi"
             echo ""
-            echo "Quick start:"
-            echo "  cargo generate --git https://github.com/rp-rs/rp2040-project-template"
-            echo ""
             echo "Flashing workflow:"
             echo "  1. Hold BOOTSEL button while plugging in Pico W"
             echo "  2. cargo run --release"
@@ -87,11 +84,5 @@
             echo ""
           '';
         });
-
-        # Template for a basic Pico W + WS2812B project
-        templates.pico-ws2812 = {
-          path = ./template;
-          description = "Raspberry Pi Pico W with WS2812B LED strip template";
-        };
       });
 }
