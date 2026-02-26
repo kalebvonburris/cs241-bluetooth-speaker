@@ -1,29 +1,22 @@
 #![no_std]
 #![no_main]
-// Technically, making a static mutable reference is
-// undefined behavior, but I said I want to, so too bad!
 #![allow(static_mut_refs)]
 
 use cortex_m_rt::entry;
+use embedded_hal::digital::v2::OutputPin;
 use rp2040_hal::{
     clocks::{init_clocks_and_plls, Clock},
     gpio::Pins,
     pac,
-    pio::PIOExt,
     sio::Sio,
     timer::Timer,
     watchdog::Watchdog,
 };
 
-/// Bootloader configuration, placed at the correct memory location.
-/// This is REQUIRED for the RP2040 to boot correctly. Otherwise,
-/// we only have the initial bootloader in ROM, which is very limited.
 #[link_section = ".boot2"]
 #[used]
 pub static BOOT2: [u8; 256] = rp2040_boot2::BOOT_LOADER_GENERIC_03H;
 
-/// There used to be panic handler code here, but it's unnecessary
-/// as my code would never panic. :)
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! {
     loop {
@@ -31,7 +24,6 @@ fn panic(_: &core::panic::PanicInfo) -> ! {
     }
 }
 
-/// The frequency of the external crystal oscillator.
 const XTAL_FREQ_HZ: u32 = 12_000_000u32;
 
 #[entry]
@@ -54,7 +46,7 @@ fn main() -> ! {
     .unwrap();
 
     let mut delay = cortex_m::delay::Delay::new(core.SYST, clocks.system_clock.freq().to_Hz());
-    let timer = Timer::new(pac.TIMER, &mut pac.RESETS, &clocks);
+    let _timer = Timer::new(pac.TIMER, &mut pac.RESETS, &clocks);
 
     let pins = Pins::new(
         pac.IO_BANK0,
@@ -63,5 +55,14 @@ fn main() -> ! {
         &mut pac.RESETS,
     );
 
-    loop {}
+    // GPIO 2 drives the LED anode through a 330Ω resistor.
+    // LED cathode connects to a hardware GND pin on the Pico.
+    let mut led_pin = pins.gpio2.into_push_pull_output();
+
+    loop {
+        led_pin.set_high().unwrap();
+        delay.delay_ms(500);
+        led_pin.set_low().unwrap();
+        delay.delay_ms(500);
+    }
 }
