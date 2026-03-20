@@ -1,88 +1,34 @@
 {
-  description = "Raspberry Pi Pico W development environment with Rust";
+  description = "Pico W Bluetooth speaker (C/C++ / pico-sdk)";
 
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    flake-utils.url = "github:numtide/flake-utils";
-  };
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-  outputs = { self, nixpkgs, rust-overlay, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
-      let
-        overlays = [ (import rust-overlay) ];
-        pkgs = import nixpkgs {
-          inherit system overlays;
-        };
+  outputs = { self, nixpkgs }:
+    let
+      system = builtins.currentSystem;
+      pkgs   = nixpkgs.legacyPackages.${system};
 
-        # Rust toolchain with ARM Cortex-M0+ target for Pico
-        rustToolchain = pkgs.rust-bin.stable.latest.default.override {
-          extensions = [ "rust-src" "rust-analyzer" "clippy" ];
-          targets = [ "thumbv6m-none-eabi" ];
-        };
-
-        # Custom picotool runner for NixOS
-        uf2Runner = pkgs.writeShellScript "uf2-runner" ''
-          set -e
-          BINARY="$1"
-          ELF_BINARY="$BINARY.elf"
-          
-          # Copy with .elf extension so picotool recognizes it
-          cp "$BINARY" "$ELF_BINARY"
-          
-          echo  "Flashing $ELF_BINARY with picotool..."
-          if sudo ${pkgs.picotool}/bin/picotool info >/dev/null 2>&1; then
-            sudo ${pkgs.picotool}/bin/picotool load "$ELF_BINARY"
-            sudo ${pkgs.picotool}/bin/picotool reboot
-            echo "✅ Flash complete!"
-            rm "$ELF_BINARY"  # Clean up
-          else
-            echo "⚠️  Pico not detected in bootloader mode"
-            echo "   Hold BOOTSEL button while plugging in Pico, then retry"
-          fi
+      pico-sdk = pkgs.fetchFromGitHub {
+        owner           = "raspberrypi";
+        repo            = "pico-sdk";
+        rev             = "2.2.0";
+        hash            = "sha256-8ubZW6yQnUTYxQqYI6hi7s3kFVQhe5EaxVvHmo93vgk=";
+        fetchSubmodules = true;
+      };
+    in {
+      devShells.${system}.default = pkgs.mkShell {
+        packages = with pkgs; [
+          gcc-arm-embedded
+          cmake
+          ninja
+          python3
+          picotool
+        ];
+        shellHook = ''
+          export PICO_SDK_PATH="${pico-sdk}"
+          export PICO_BOARD="pico_w"
+          echo "PICO_SDK_PATH=$PICO_SDK_PATH"
         '';
-
-        # Environment variables for Pico development
-        picoEnvVars = {
-          CARGO_TARGET_THUMBV6M_NONE_EABI_RUNNER = "${uf2Runner}";
-          DEFMT_LOG = "debug";
-        };
-      in
-      {
-        devShells.default = pkgs.mkShell (picoEnvVars // {
-          buildInputs = with pkgs; [
-            # Rust toolchain
-            rustToolchain
-            cargo-generate
-            cargo-binutils
-            
-            # Embedded development tools
-            probe-rs-tools
-            picotool
-            
-            # Build dependencies
-            pkg-config
-            
-            # Additional tools
-            minicom
-            screen
-          ];
-
-          shellHook = ''
-            # Display toolchain info
-            echo "🦀 Rust Pico W development environment loaded!"
-            echo "Rust version: $(rustc --version)"
-            echo "Available targets: thumbv6m-none-eabi"
-            echo ""
-            echo "Flashing workflow:"
-            echo "  1. Hold BOOTSEL button while plugging in Pico W"
-            echo "  2. cargo run --release"
-            echo "  3. Pico will restart automatically!"
-            echo ""
-          '';
-        });
-      });
+      };
+    };
 }
