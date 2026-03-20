@@ -76,7 +76,7 @@ void loop() {
 
 ---
 
-## Key Differences From Before
+## Differences in syntax From Before using the BLE on arduino IDE 
 
 | Old (wrong) | New (correct) |
 |---|---|
