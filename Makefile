@@ -1,4 +1,12 @@
-BOARD = rp2040:rp2040:rpipicow:ipbtstack=ipv4btcblebig
+# Detect connected board via picotool
+CHIP := $(shell picotool info 2>/dev/null | grep -i "rp2350" > /dev/null && echo "rp2350" || echo "rp2040")
+
+ifeq ($(CHIP),rp2350)
+    BOARD = rp2040:rp2040:rpipico2w:ipbtstack=ipv4btcblebig
+else
+    BOARD = rp2040:rp2040:rpipicow:ipbtstack=ipv4btcblebig
+endif
+
 BOARD_URL = https://github.com/earlephilhower/arduino-pico/releases/download/global/package_rp2040_index.json
 
 # Auto-detect the Pico W's serial port via arduino-cli
