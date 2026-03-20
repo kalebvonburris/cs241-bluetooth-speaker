@@ -1,4 +1,4 @@
-BOARD = rp2040:rp2040:rpipicow:ipbtstack=ipv4btcble
+BOARD = rp2040:rp2040:rpipicow:ipbtstack=ipv4btcblebig
 BOARD_URL = https://github.com/earlephilhower/arduino-pico/releases/download/global/package_rp2040_index.json
 
 # Auto-detect the Pico W's serial port via arduino-cli
