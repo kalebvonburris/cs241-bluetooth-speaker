@@ -1,4 +1,5 @@
 #include <BluetoothAudio.h>
+#include <hardware/pwm.h>
 
 PWMAudio pwm(14, false);
 BluetoothAudioConsumerPWM consumer(pwm);
@@ -8,27 +9,18 @@ bool connected = false;
 void setup() {
     set_sys_clock_khz(250000, true);
     Serial.begin(115200);
-    delay(3000);
 
     a2dp.setName("PicoSpeaker");
+
     a2dp.setConsumer(&consumer);
     consumer.setVolume(255);
-    a2dp.onConnect([](void *cbData, bool isConnected) {
-        connected = isConnected;
-        Serial.println(isConnected ? "Phone connected!" : "Phone disconnected.");
-    }, nullptr);
-
-    a2dp.onPlaybackStatus([](void *cbData, A2DPSink::PlaybackStatus status) {
-        Serial.print("Playback status: ");
-        Serial.println((int)status);
-    }, nullptr);
 
     bool ok = a2dp.begin();
-    Serial.print("begin(): ");
-    Serial.println(ok ? "true" : "false");
+
+    // Invert pin 14 for more power to the buzzer
+    // Does this work? Who knows!
+    uint slice = pwm_gpio_to_slice_num(14);
+    pwm_set_output_polarity(slice, false, true);
 }
 
-void loop() {
-    Serial.println(connected ? "Connected" : "Waiting...");
-    delay(1000);
-}
+void loop() {}
