@@ -1,38 +1,62 @@
 #include <BLE.h>
-#include <WiFi.h>
 
-#define LED_PIN 15
+#define BUZZER_PIN 15
 
-BLEService ledService(BLEUUID("19B10000-E8F2-537E-4F6C-D104768A1214"));
-BLECharacteristic ledChar(BLEUUID("19B10001-E8F2-537E-4F6C-D104768A1214"), BLEWrite, "LED");
+BLEService soundService(BLEUUID("19B10000-E8F2-537E-4F6C-D104768A1214"));
+BLECharacteristic noteChar(BLEUUID("19B10001-E8F2-537E-4F6C-D104768A1214"), BLEWrite, "Note");
 
 void setup() {
-    Serial.begin(9600);
-    pinMode(LED_PIN, OUTPUT);
-    digitalWrite(LED_PIN, LOW);
+  Serial.begin(9600);
+  delay(2000);
 
-    BLE.begin("PicoLED");
+  pinMode(BUZZER_PIN, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
 
-    ledService.addCharacteristic(&ledChar);
-    BLE.server()->addService(&ledService);
+  BLE.begin("PicoSpeaker");
 
-    ledChar.setValue((uint8_t)0);
+  soundService.addCharacteristic(&noteChar);
+  BLE.server()->addService(&soundService);
+  noteChar.setValue((uint8_t)0);
 
-    ledChar.onWrite([](BLECharacteristic *c) {
-        if (c->valueLen() < 1) return;
+  noteChar.onWrite([](BLECharacteristic * c) {
+    // correct public methods from header file
+    size_t len = c->valueLen();
+    const uint8_t* data = (const uint8_t*)c->valueData();
 
-        const uint8_t *data = (const uint8_t *) c->valueData();
+    if (len < 4) {
+      Serial.println("Bad packet, ignoring");
+      return;
+    }
 
-        uint8_t value = data[0];
-        digitalWrite(LED_PIN, HIGH);
-        delay(value * 1000);
-        digitalWrite(LED_PIN, LOW);
-    });
+    uint16_t frequency = ((uint16_t)data[0] << 8) | data[1];
+    uint16_t duration  = ((uint16_t)data[2] << 8) | data[3];
 
-    BLE.startAdvertising();
-    Serial.println("PicoLED ready!");
+    if (duration  > 3000) duration  = 3000;
+    if (frequency > 5000) frequency = 5000;
+
+    Serial.print("Freq: ");
+    Serial.print(frequency);
+    Serial.print("hz  Dur: ");
+    Serial.print(duration);
+    Serial.println("ms");
+
+    if (frequency == 0) {
+      noTone(BUZZER_PIN);
+      delay(duration);
+    } else {
+      tone(BUZZER_PIN, frequency, duration);
+      delay(duration);
+      noTone(BUZZER_PIN);
+    }
+  });
+
+  BLE.startAdvertising();
+
+  Serial.println("PicoSpeaker ready!");
+  Serial.println("Waiting for iPhone...");
 }
 
 void loop() {
-    delay(1000);
+  delay(1000);
 }
