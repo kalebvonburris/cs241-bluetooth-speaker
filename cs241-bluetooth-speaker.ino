@@ -4,7 +4,6 @@
 PWMAudio pwm(14, false);
 BluetoothAudioConsumerPWM consumer(pwm);
 A2DPSink a2dp;
-bool connected = false;
 
 void setup() {
     Serial.begin(115200);
