@@ -7,7 +7,6 @@ A2DPSink a2dp;
 bool connected = false;
 
 void setup() {
-    set_sys_clock_khz(250000, true);
     Serial.begin(115200);
 
     a2dp.setName("PicoSpeaker");
@@ -15,7 +14,7 @@ void setup() {
     a2dp.setConsumer(&consumer);
     consumer.setVolume(255);
 
-    bool ok = a2dp.begin();
+    a2dp.begin();
 
     // Invert pin 14 for more power to the buzzer
     // Does this work? Who knows!
