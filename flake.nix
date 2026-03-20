@@ -5,7 +5,7 @@
 
   outputs = { self, nixpkgs }:
     let
-      system = "x86_64-linux";
+      system = builtins.currentSystem;
       pkgs   = nixpkgs.legacyPackages.${system};
 
       pico-sdk = pkgs.fetchFromGitHub {
