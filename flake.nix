@@ -15,12 +15,12 @@
             picotool
           ];
 
-          nativeBuildInputs = with pkgs; [
-            udev
+          nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux [
+            pkgs.udev
           ];
 
-          buildInputs = with pkgs; [
-            pkg-config
+          buildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux [
+            pkgs.pkg-config
           ];
 
           shellHook = ''
@@ -33,7 +33,9 @@
               arduino-cli core install rp2040:rp2040 --additional-urls "$BOARD_URL"
             fi
 
-            export LD_LIBRARY_PATH="${pkgs.udev}/lib:$LD_LIBRARY_PATH"
+            if [ "$(uname -s)" = "Linux" ]; then
+              export LD_LIBRARY_PATH="${pkgs.udev}/lib:$LD_LIBRARY_PATH"
+            fi
 
             echo ""
             echo "║   Pico W BT Speaker dev shell ready  ║"
