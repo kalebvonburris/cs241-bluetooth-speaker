@@ -1,62 +1,34 @@
-#include <BLE.h>
+#include <BluetoothAudio.h>
 
-#define BUZZER_PIN 15
-
-BLEService soundService(BLEUUID("19B10000-E8F2-537E-4F6C-D104768A1214"));
-BLECharacteristic noteChar(BLEUUID("19B10001-E8F2-537E-4F6C-D104768A1214"), BLEWrite, "Note");
+PWMAudio pwm(14, false);
+BluetoothAudioConsumerPWM consumer(pwm);
+A2DPSink a2dp;
+bool connected = false;
 
 void setup() {
-  Serial.begin(9600);
-  delay(2000);
+    set_sys_clock_khz(250000, true);
+    Serial.begin(115200);
+    delay(3000);
 
-  pinMode(BUZZER_PIN, OUTPUT);
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);
+    a2dp.setName("PicoSpeaker");
+    a2dp.setConsumer(&consumer);
+    consumer.setVolume(255);
+    a2dp.onConnect([](void *cbData, bool isConnected) {
+        connected = isConnected;
+        Serial.println(isConnected ? "Phone connected!" : "Phone disconnected.");
+    }, nullptr);
 
-  BLE.begin("PicoSpeaker");
+    a2dp.onPlaybackStatus([](void *cbData, A2DPSink::PlaybackStatus status) {
+        Serial.print("Playback status: ");
+        Serial.println((int)status);
+    }, nullptr);
 
-  soundService.addCharacteristic(&noteChar);
-  BLE.server()->addService(&soundService);
-  noteChar.setValue((uint8_t)0);
-
-  noteChar.onWrite([](BLECharacteristic * c) {
-    // correct public methods from header file
-    size_t len = c->valueLen();
-    const uint8_t* data = (const uint8_t*)c->valueData();
-
-    if (len < 4) {
-      Serial.println("Bad packet, ignoring");
-      return;
-    }
-
-    uint16_t frequency = ((uint16_t)data[0] << 8) | data[1];
-    uint16_t duration  = ((uint16_t)data[2] << 8) | data[3];
-
-    if (duration  > 3000) duration  = 3000;
-    if (frequency > 5000) frequency = 5000;
-
-    Serial.print("Freq: ");
-    Serial.print(frequency);
-    Serial.print("hz  Dur: ");
-    Serial.print(duration);
-    Serial.println("ms");
-
-    if (frequency == 0) {
-      noTone(BUZZER_PIN);
-      delay(duration);
-    } else {
-      tone(BUZZER_PIN, frequency, duration);
-      delay(duration);
-      noTone(BUZZER_PIN);
-    }
-  });
-
-  BLE.startAdvertising();
-
-  Serial.println("PicoSpeaker ready!");
-  Serial.println("Waiting for iPhone...");
+    bool ok = a2dp.begin();
+    Serial.print("begin(): ");
+    Serial.println(ok ? "true" : "false");
 }
 
 void loop() {
-  delay(1000);
+    Serial.println(connected ? "Connected" : "Waiting...");
+    delay(1000);
 }
