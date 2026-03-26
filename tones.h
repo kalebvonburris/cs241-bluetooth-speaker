@@ -1,8 +1,8 @@
 #include <BluetoothAudio.h>
 
-const int BUZZER_PIN = 5;
+inline constexpr int BUZZER_PIN = 5;
 
-void buzz(int frequency, int duration, int padding=0) {
+inline void buzz(int frequency, int duration, int padding=0) {
   tone(BUZZER_PIN, frequency);
   delay(duration);
   noTone(BUZZER_PIN);

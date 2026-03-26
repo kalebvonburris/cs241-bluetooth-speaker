@@ -10,9 +10,7 @@ A2DPSink a2dp;
 void setup() {
     Serial.begin(115200);
 
-    set_sys_clock_khz(250000, true);
-
-    a2dp.setName("PicoSpeaker Kaleb");
+    a2dp.setName("PicoSpeaker");
 
     setup_tones(a2dp);
 
